@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>塗料希釈計算</title>
+<style>
+  :root{
+    --ink:#22282c;
+    --paper:#f0eee7;
+    --panel:#ffffff;
+    --line:#d8d4c8;
+    --safety:#e8a400;
+    --safety-dark:#a86e00;
+    --danger:#b5442e;
+    --danger-bg:#fbeee4;
+    --ok:#3f7a56;
+    --ok-bg:#e9f2ec;
+    --thinner:#3f7a8c;
+    --hardener:#7a5a2e;
+    --mono: "SFMono-Regular","Menlo","Consolas",monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased; padding-bottom:40px;
+  }
+  header{ background:var(--ink); color:var(--paper); padding:22px 20px 20px; position:relative; overflow:hidden; }
+  header::after{
+    content:""; position:absolute; right:-30px; top:-30px; width:140px; height:140px;
+    background:repeating-linear-gradient(45deg,var(--safety) 0 14px, var(--ink) 14px 28px);
+    opacity:.9; border-radius:50%;
+  }
+  .eyebrow{ font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--safety); font-weight:700; margin-bottom:6px; }
+  h1{ margin:0; font-size:24px; font-weight:800; letter-spacing:.01em; line-height:1.3; }
+  .sub{ margin-top:6px; font-size:13px; color:#c9c5ba; max-width:80%; }
+
+  main{ padding:16px; max-width:520px; margin:0 auto; }
+
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:18px; margin-top:16px; }
+  .card-title{
+    font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:#8a8578; font-weight:700;
+    margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .card-title::before{ content:""; width:6px;height:6px; background:var(--safety); display:inline-block; }
+
+  label{ display:block; font-size:12px; font-weight:700; color:#5a564c; margin-bottom:6px; }
+  .field{ margin-bottom:16px; }
+  .input-wrap{
+    display:flex; align-items:center; border:1px solid var(--line); border-radius:3px; overflow:hidden; background:var(--paper);
+  }
+  .input-wrap input{
+    flex:1; border:none; background:transparent; padding:12px; font-size:18px; font-family:var(--mono);
+    font-weight:700; color:var(--ink); min-width:0;
+  }
+  .input-wrap input:focus{ outline:2px solid var(--safety-dark); outline-offset:-2px; }
+  .unit{ padding:0 12px; font-size:13px; color:#8a8578; font-weight:700; white-space:nowrap; }
+  .hint{ font-size:11px; color:#9a9584; margin-top:5px; }
+
+  .ratio-row{ display:flex; align-items:center; gap:8px; }
+  .ratio-row .input-wrap{ flex:1; }
+  .ratio-colon{ font-family:var(--mono); font-size:20px; font-weight:800; color:#8a8578; }
+
+  .preset-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .preset-btn{
+    flex:1 1 auto; min-width:90px; border:1px solid var(--line); background:var(--paper);
+    padding:10px 8px; border-radius:3px; font-size:12px; font-weight:600; color:var(--ink);
+    cursor:pointer; text-align:center; transition:.15s;
+  }
+  .preset-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  .result-card{ background:var(--ink); color:var(--paper); border-radius:4px; padding:20px; margin-top:16px; }
+  .result-row{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px solid rgba(240,238,231,.15); }
+  .result-row:last-child{ border-bottom:none; }
+  .result-label{ font-size:13px; color:#b8b4a8; }
+  .result-value{ font-family:var(--mono); font-size:20px; font-weight:800; }
+  .result-value.base{ color:var(--paper); }
+  .result-value.hardener{ color:var(--safety); }
+  .result-value.thinner{ color:#8fc4d6; }
+  .result-total{
+    margin-top:12px; padding-top:12px; border-top:1px solid rgba(240,238,231,.25);
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .result-total .result-label{ font-size:13px; font-weight:700; color:var(--paper); }
+  .result-total .result-value{ font-size:22px; }
+
+  .warn{ margin-top:12px; font-size:12px; background:var(--danger-bg); border-left:3px solid var(--danger); padding:10px 12px; color:#7a3323; border-radius:2px; display:none; }
+  .warn.show{ display:block; }
+
+  .note-static{ font-size:11.5px; color:#8a8578; margin-top:10px; line-height:1.6; }
+
+  footer{ text-align:center; font-size:11px; color:#9a9584; margin-top:24px; padding:0 20px; line-height:1.7; }
+  footer strong{ color:#7a7568; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">一建塗装 現場ツール</div>
+  <h1>塗料希釈計算</h1>
+  <div class="sub">主剤の量と配合比率から、硬化剤・シンナーの量を自動計算します。</div>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="card-title">よくある配合比率</div>
+    <div class="preset-row" id="presetRow"></div>
+    <div class="hint">タップすると下の比率が自動入力されます(製品ラベルの表記を優先してください)</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">主剤:硬化剤の比率</div>
+    <div class="ratio-row">
+      <div class="input-wrap">
+        <input type="number" id="ratioBase" inputmode="decimal" step="1" value="9">
+      </div>
+      <span class="ratio-colon">:</span>
+      <div class="input-wrap">
+        <input type="number" id="ratioHardener" inputmode="decimal" step="0.1" value="1">
+      </div>
+    </div>
+    <div class="hint">製品ラベルの「主剤:硬化剤=◯:◯」をそのまま入力してください</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">主剤量・シンナー添加率</div>
+
+    <div class="field">
+      <label for="baseWeight">主剤の量</label>
+      <div class="input-wrap">
+        <input type="number" id="baseWeight" inputmode="decimal" step="10" value="1000">
+        <span class="unit">g</span>
+      </div>
+      <div class="hint">缶の量、または今回使う分量を入力してください</div>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label for="thinnerPercent">シンナー添加率</label>
+      <div class="input-wrap">
+        <input type="number" id="thinnerPercent" inputmode="decimal" step="1" value="8">
+        <span class="unit">%</span>
+      </div>
+      <div class="hint">主剤+硬化剤の合計に対する割合。製品ラベルの指定範囲(例: 5〜10%)を入力してください</div>
+    </div>
+  </div>
+
+  <div class="result-card">
+    <div class="result-row">
+      <span class="result-label">主剤</span>
+      <span class="result-value base" id="outBase">–</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">硬化剤</span>
+      <span class="result-value hardener" id="outHardener">–</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">シンナー</span>
+      <span class="result-value thinner" id="outThinner">–</span>
+    </div>
+    <div class="result-total">
+      <span class="result-label">合計(塗装に使える量)</span>
+      <span class="result-value" id="outTotal">–</span>
+    </div>
+  </div>
+  <div class="warn" id="warnBox"></div>
+
+</main>
+
+<footer>
+  数値は目安です。<strong>最終判断は製品ラベル・SDS・メーカー指示を優先してください。可使時間(ポットライフ)を超えた塗料は使用しないでください。</strong>
+</footer>
+
+<script>
+  const presets = [
+    { name:"9:1", base:9, hardener:1, thinner:8 },
+    { name:"カスタム", base:null, hardener:null, thinner:null }
+  ];
+
+  const presetRow = document.getElementById("presetRow");
+  const ratioBaseEl = document.getElementById("ratioBase");
+  const ratioHardenerEl = document.getElementById("ratioHardener");
+  const baseWeightEl = document.getElementById("baseWeight");
+  const thinnerPercentEl = document.getElementById("thinnerPercent");
+  const warnBox = document.getElementById("warnBox");
+
+  const outBase = document.getElementById("outBase");
+  const outHardener = document.getElementById("outHardener");
+  const outThinner = document.getElementById("outThinner");
+  const outTotal = document.getElementById("outTotal");
+
+  function renderPresets(){
+    presetRow.innerHTML = "";
+    presets.forEach((p, i) => {
+      const btn = document.createElement("button");
+      btn.className = "preset-btn" + (i === 0 ? " active" : "");
+      btn.textContent = p.name;
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        if (p.base !== null) {
+          ratioBaseEl.value = p.base;
+          ratioHardenerEl.value = p.hardener;
+          thinnerPercentEl.value = p.thinner;
+          calc();
+        } else {
+          ratioHardenerEl.focus();
+        }
+      });
+      presetRow.appendChild(btn);
+    });
+  }
+
+  function fmt(n){ if (!isFinite(n)) return "–"; return n.toLocaleString("ja-JP",{maximumFractionDigits:1}); }
+
+  function calc(){
+    const rBase = parseFloat(ratioBaseEl.value);
+    const rHardener = parseFloat(ratioHardenerEl.value);
+    const baseWeight = parseFloat(baseWeightEl.value);
+    const thinnerPct = parseFloat(thinnerPercentEl.value);
+
+    warnBox.classList.remove("show");
+
+    if (!rBase || !rHardener || !baseWeight || rBase <= 0 || rHardener <= 0 || baseWeight <= 0) {
+      outBase.textContent = "–"; outHardener.textContent = "–";
+      outThinner.textContent = "–"; outTotal.textContent = "–";
+      return;
+    }
+
+    const hardenerWeight = baseWeight * (rHardener / rBase);
+    const subtotal = baseWeight + hardenerWeight;
+    const thinnerWeight = isFinite(thinnerPct) && thinnerPct > 0 ? subtotal * (thinnerPct / 100) : 0;
+    const total = subtotal + thinnerWeight;
+
+    outBase.textContent = `${fmt(baseWeight)} g`;
+    outHardener.textContent = `${fmt(hardenerWeight)} g`;
+    outThinner.textContent = thinnerWeight > 0 ? `${fmt(thinnerWeight)} g` : "– (0%)";
+    outTotal.textContent = `${fmt(total)} g`;
+
+    if (thinnerPct > 20) {
+      warnBox.textContent = "シンナー添加率が20%を超えています。製品ラベルの指定範囲を超えていないか確認してください。";
+      warnBox.classList.add("show");
+    }
+  }
+
+  [ratioBaseEl, ratioHardenerEl, baseWeightEl, thinnerPercentEl].forEach(el => el.addEventListener("input", calc));
+
+  renderPresets();
+  calc();
+</script>
+
+</body>
+</html>
