@@ -58,10 +58,11 @@
   .unit{ padding:0 12px; font-size:13px; color:#8a8578; font-weight:700; white-space:nowrap; }
   .hint{ font-size:11px; color:#9a9584; margin-top:5px; }
 
-  .ratio-row{ display:flex; align-items:center; gap:8px; }
+  .ratio-row{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:end; gap:8px; }
+  .ratio-field{ min-width:0; }
   .ratio-row .input-wrap{ flex:1 1 0; min-width:0; }
   .ratio-row input{ width:100%; }
-  .ratio-colon{ flex-shrink:0; }
+  .ratio-colon{ align-self:end; padding-bottom:12px; }
   .ratio-colon{ font-family:var(--mono); font-size:20px; font-weight:800; color:#8a8578; }
 
   .preset-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
@@ -101,7 +102,7 @@
 <header>
   <div class="eyebrow">一建塗装 現場ツール</div>
   <h1>塗料希釈計算</h1>
-  <div class="sub">主剤の量と配合比率から、硬化剤・シンナーの量を自動計算します。</div>
+  <div class="sub">主剤の量と配合比率から、硬化剤・希釈剤（シンナー・水）の量を自動計算します。</div>
 </header>
 
 <main>
@@ -113,21 +114,27 @@
   </div>
 
   <div class="card">
-    <div class="card-title">主剤:硬化剤の比率</div>
+    <div class="card-title">主剤:硬化剤の比率（重量比）</div>
     <div class="ratio-row">
-      <div class="input-wrap">
-        <input type="number" id="ratioBase" inputmode="decimal" step="1" value="9">
+      <div class="ratio-field">
+        <label for="ratioBase">主剤</label>
+        <div class="input-wrap">
+          <input type="number" id="ratioBase" inputmode="decimal" step="1" value="9">
+        </div>
       </div>
       <span class="ratio-colon">:</span>
-      <div class="input-wrap">
-        <input type="number" id="ratioHardener" inputmode="decimal" step="0.1" value="1">
+      <div class="ratio-field">
+        <label for="ratioHardener">硬化剤</label>
+        <div class="input-wrap">
+          <input type="number" id="ratioHardener" inputmode="decimal" step="0.1" value="1">
+        </div>
       </div>
     </div>
-    <div class="hint">製品ラベルの「主剤:硬化剤=◯:◯」をそのまま入力してください</div>
+    <div class="hint">製品ラベルの重量比「主剤:硬化剤=◯:◯」を入力してください</div>
   </div>
 
   <div class="card">
-    <div class="card-title">主剤量・シンナー添加率</div>
+    <div class="card-title">主剤量・希釈剤（シンナー・水）添加率</div>
 
     <div class="field">
       <label for="baseWeight">主剤の量</label>
@@ -139,12 +146,12 @@
     </div>
 
     <div class="field" style="margin-bottom:0;">
-      <label for="thinnerPercent">シンナー添加率</label>
+      <label for="thinnerPercent">希釈剤（シンナー・水）添加率</label>
       <div class="input-wrap">
         <input type="number" id="thinnerPercent" inputmode="decimal" step="1" value="8">
         <span class="unit">%</span>
       </div>
-      <div class="hint">主剤+硬化剤の合計に対する割合。製品ラベルの指定範囲(例: 5〜10%)を入力してください</div>
+      <div class="hint">主剤+硬化剤の合計重量に対する割合。製品ラベルの指定範囲(例: 5〜10%)を入力してください</div>
     </div>
   </div>
 
@@ -158,7 +165,7 @@
       <span class="result-value hardener" id="outHardener">–</span>
     </div>
     <div class="result-row">
-      <span class="result-label">シンナー</span>
+      <span class="result-label">希釈剤（シンナー・水）</span>
       <span class="result-value thinner" id="outThinner">–</span>
     </div>
     <div class="result-total">
@@ -167,7 +174,7 @@
     </div>
   </div>
   <div class="warn" id="warnBox"></div>
-  <p class="note-static"><strong>混合の順序：</strong>主剤と硬化剤を十分に撹拌してから、シンナー（水）を加えて、さらによく撹拌してください。製品ごとの混合・希釈手順はメーカーの指示を優先してください。</p>
+  <p class="note-static"><strong>混合の順序：</strong>主剤と硬化剤を十分に撹拌してから、希釈剤（シンナー・水）を加えて、さらによく撹拌してください。製品ごとの混合・希釈手順はメーカーの指示を優先してください。</p>
 
 </main>
 
@@ -242,7 +249,7 @@
     outTotal.textContent = `${fmt(total)} g`;
 
     if (thinnerPct > 20) {
-      warnBox.textContent = "シンナー添加率が20%を超えています。製品ラベルの指定範囲を超えていないか確認してください。";
+      warnBox.textContent = "希釈剤（シンナー・水）添加率が20%を超えています。製品ラベルの指定範囲を超えていないか確認してください。";
       warnBox.classList.add("show");
     }
   }
