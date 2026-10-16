@@ -59,7 +59,9 @@
   .hint{ font-size:11px; color:#9a9584; margin-top:5px; }
 
   .ratio-row{ display:flex; align-items:center; gap:8px; }
-  .ratio-row .input-wrap{ flex:1; }
+  .ratio-row .input-wrap{ flex:1 1 0; min-width:0; }
+  .ratio-row input{ width:100%; }
+  .ratio-colon{ flex-shrink:0; }
   .ratio-colon{ font-family:var(--mono); font-size:20px; font-weight:800; color:#8a8578; }
 
   .preset-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
@@ -165,6 +167,7 @@
     </div>
   </div>
   <div class="warn" id="warnBox"></div>
+  <p class="note-static"><strong>混合の順序：</strong>主剤と硬化剤を十分に撹拌してから、シンナー（水）を加えて、さらによく撹拌してください。製品ごとの混合・希釈手順はメーカーの指示を優先してください。</p>
 
 </main>
 
@@ -252,3 +255,4 @@
 
 </body>
 </html>
+
